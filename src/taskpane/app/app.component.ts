@@ -43,8 +43,9 @@ export default class AppComponent {
         /**
          * My code goes here for POC thing-
          */
+        var mySheet = context.workbook.worksheets.getActiveWorksheet();
+
         if ((<HTMLInputElement>document.getElementById("test")).value === "openAssignment") {
-          var mySheet = context.workbook.worksheets.getActiveWorksheet();
           mySheet.protection.unprotect();
           var myRange = mySheet.getRange(this.jsonFormatWithValues.questionCell);
           myRange.values = [[this.jsonFormatWithValues.question]];
@@ -67,33 +68,38 @@ export default class AppComponent {
           myRangeForGradedCell.format.fill.color = "yellow";
         }
         else if ((<HTMLInputElement>document.getElementById("test")).value === "takeAssignment") {
-          var mySheetForTakeAssignment = context.workbook.worksheets.getActiveWorksheet();
-          mySheetForTakeAssignment.protection.unprotect();
-
-          var myRangeForTakeAssignment = mySheetForTakeAssignment.getRange(this.jsonFormatWithValues.gradedCell);
+          // var mySheet = context.workbook.worksheets.getActiveWorksheet();
+          // mySheet.protection.protect();
+          var myRangeForTakeAssignment = mySheet.getRange(this.jsonFormatWithValues.gradedCell);
 
           myRangeForTakeAssignment.load("values");
           await context.sync();
           console.log(myRangeForTakeAssignment.values[0][0]);
           this.answerByStudent = myRangeForTakeAssignment.values[0][0];
+
+          mySheet.protection.protect(null);
+          myRangeForTakeAssignment.format.protection.load("locked");
+
+          await context.sync();
+          // localStorage.removeItem("jsonFormatWithValues");
+          myRangeForTakeAssignment.format.protection.locked = false;
+
         }
         else {
-          var mySheetForPostReview = context.workbook.worksheets.getActiveWorksheet();
-          var myRangeForPostReview = mySheetForPostReview.getRange(this.jsonFormatWithValues.gradedCell);
+          //  mySheet = context.workbook.worksheets.getActiveWorksheet();
+          mySheet.protection.unprotect();
+          var myRangeForPostReview = mySheet.getRange(this.jsonFormatWithValues.gradedCell);
           /**
            * Working
            */
-          // mySheetForPostReview.protection.protect(); 
           myRangeForPostReview.load("values");
           /**
            * TODO - 
            * locak a specific cell.
            */
           myRangeForPostReview.load('formulas');
-          myRangeForPostReview.format.protection.load("locked");
           await context.sync();
           console.log(myRangeForPostReview.formulas);
-          myRangeForPostReview.format.protection.locked = false;
 
           if (myRangeForPostReview.formulas[0][0] === this.jsonFormatWithValues.formulae || myRangeForPostReview.formulas[0][0] === this.jsonFormatWithValues.rightAnswer) {
             myRangeForPostReview.format.fill.color = this.jsonFormatWithValues.rightAnswerColor;
@@ -101,10 +107,18 @@ export default class AppComponent {
           else {
             myRangeForPostReview.format.fill.color = this.jsonFormatWithValues.wrongAnswerColor;
           }
+
+          // mySheet.protection.protect();
+          myRangeForPostReview.format.protection.load("locked");
+          await context.sync();
+          myRangeForPostReview.format.protection.locked = true;
+          await context.sync();
+          mySheet.protection.protect();
+          console.log(myRangeForPostReview.format.protection.locked);
+
         }
 
         await context.sync();
-        // localStorage.removeItem("jsonFormatWithValues");
 
       });
     } catch (error) {
