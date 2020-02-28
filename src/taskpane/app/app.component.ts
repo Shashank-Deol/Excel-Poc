@@ -10,24 +10,22 @@ export default class AppComponent {
   welcomeMessage = "Welcome";
   answerByStudent: any;
   answerByAuthor = 5;
-  
-  jsonFormatWithValues = {
-    questionCell: "B2",
-    question: "QuestionGoesHere.",
-    choiceOneCell: "B3",
-    choiceOne: "Value One",
-    choiceTwoCell: "B4",
-    choiceTwo: "Value Two",
-    choiceThreeCell: "B5",
-    choiceThree: "Value Three",
-    gradedCell: "B6",
-    wrongAnswerColor: "red",
-    rightAnswerColor: "green"
-  };
+  jsonFormatWithValues: any;
+
+  conditionToBeFulfilled() {
+    if (this.answerByStudent === this.jsonFormatWithValues.rightAnswer) {
+      return true;
+    }
+    else {
+      return false;
+    }
+  }
 
   async run() {
     try {
       await Excel.run(async context => {
+
+        this.jsonFormatWithValues = JSON.parse(localStorage.getItem("jsonFormatWithValues"));
         /**
          * Insert your Excel code here
          */
@@ -41,7 +39,6 @@ export default class AppComponent {
 
         await context.sync();
         console.log(`The range address was ${range.address}.`);
-
 
         /**
          * My code goes here for POC thing-
@@ -83,12 +80,22 @@ export default class AppComponent {
         else {
           var mySheetForPostReview = context.workbook.worksheets.getActiveWorksheet();
           var myRangeForPostReview = mySheetForPostReview.getRange(this.jsonFormatWithValues.gradedCell);
-          // mySheetForPostReview.protection.protect();
-          // var locked = myRangeForPostReview.format.protection.locked;
+          /**
+           * Working
+           */
+          // mySheetForPostReview.protection.protect(); 
           myRangeForPostReview.load("values");
+          /**
+           * TODO - 
+           * locak a specific cell.
+           */
+          myRangeForPostReview.load('formulas');
+          myRangeForPostReview.format.protection.load("locked");
           await context.sync();
+          console.log(myRangeForPostReview.formulas);
+          myRangeForPostReview.format.protection.locked = false;
 
-          if (this.answerByStudent === this.answerByAuthor) {
+          if (myRangeForPostReview.formulas[0][0] === this.jsonFormatWithValues.formulae || myRangeForPostReview.formulas[0][0] === this.jsonFormatWithValues.rightAnswer) {
             myRangeForPostReview.format.fill.color = this.jsonFormatWithValues.rightAnswerColor;
           }
           else {
@@ -97,6 +104,7 @@ export default class AppComponent {
         }
 
         await context.sync();
+        // localStorage.removeItem("jsonFormatWithValues");
 
       });
     } catch (error) {
